@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data artifacts
+*.fits
+*.fits.Z
+*.npy
+*.npz
+*.h5
+*.hdf5
+
+# Logs and temp
+*.log
+*.tmp
+*.swp
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Conda
+.conda/
