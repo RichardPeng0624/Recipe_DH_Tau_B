@@ -1,5 +1,7 @@
 # Recipe_DH_Tau_B
-<img width="320" height="320" alt="dhtaub_logo" src="https://github.com/user-attachments/assets/dac470f1-1c70-4427-9a1a-2f1b8751ba87" />
+
+<img width="400" height="400" alt="dhtaub_logo" src="https://github.com/user-attachments/assets/3b72403b-307e-4b1f-aa94-dd8ea094bbc5" />
+
 
 Welcome to the coding repository for exploring the atmosphere of the young super-Jupiter **DH Tau B** using **CRIRES+** data and modeling/retrieval workflows.
 
