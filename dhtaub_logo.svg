@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="640" height="640">
+<defs>
+  <clipPath id="pClip">
+    <circle cx="80" cy="80" r="66"/>
+  </clipPath>
+
+  <radialGradient id="atmo" cx="50%" cy="50%" r="50%">
+    <stop offset="87%"  stop-color="#994422" stop-opacity="0"/>
+    <stop offset="93%"  stop-color="#bb5522" stop-opacity="0.45"/>
+    <stop offset="100%" stop-color="#882200" stop-opacity="0"/>
+  </radialGradient>
+
+  <radialGradient id="crtTint" cx="50%" cy="50%" r="50%">
+    <stop offset="0%"   stop-color="#7a5a10" stop-opacity="0.08"/>
+    <stop offset="100%" stop-color="#3a2008" stop-opacity="0.18"/>
+  </radialGradient>
+
+  <filter id="amber" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur stdDeviation="0.7" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>
+
+
+<!-- ═══════════════════════════════════
+     PLANET — flat pixel bands, no limb effect
+═══════════════════════════════════ -->
+<g clip-path="url(#pClip)">
+  <rect x="14" y="14" width="132" height="5" fill="#c4a06c"/>
+  <rect x="14" y="19" width="132" height="5" fill="#663325"/>
+  <rect x="14" y="24" width="132" height="5" fill="#b06040"/>
+  <rect x="14" y="29" width="132" height="5" fill="#49281c"/>
+  <rect x="14" y="34" width="132" height="5" fill="#aa7840"/>
+  <rect x="14" y="39" width="132" height="5" fill="#622c1e"/>
+  <rect x="14" y="44" width="132" height="5" fill="#bea060"/>
+  <rect x="14" y="49" width="132" height="5" fill="#3c2018"/>
+  <rect x="14" y="54" width="132" height="5" fill="#a05535"/>
+  <rect x="14" y="59" width="132" height="5" fill="#562a1c"/>
+  <rect x="14" y="64" width="132" height="5" fill="#a87840"/>
+  <rect x="14" y="69" width="132" height="5" fill="#4a2414"/>
+  <rect x="14" y="74" width="132" height="5" fill="#984830"/>
+  <rect x="14" y="79" width="132" height="5" fill="#52281c"/>
+  <rect x="14" y="84" width="132" height="5" fill="#ae8840"/>
+  <!-- SPECTRUM STRIPE -->
+  <rect x="14"  y="89" width="16" height="7" fill="#3e3488"/>
+  <rect x="30"  y="89" width="16" height="7" fill="#2a3e88"/>
+  <rect x="46"  y="89" width="16" height="7" fill="#2e7082"/>
+  <rect x="62"  y="89" width="16" height="7" fill="#286040"/>
+  <rect x="78"  y="89" width="16" height="7" fill="#888030"/>
+  <rect x="94"  y="89" width="16" height="7" fill="#8c4428"/>
+  <rect x="110" y="89" width="16" height="7" fill="#742830"/>
+  <rect x="126" y="89" width="20" height="7" fill="#180c0c"/>
+  <rect x="38"  y="89" width="2"  height="7" fill="#050305"/>
+  <rect x="61"  y="89" width="2"  height="7" fill="#050305"/>
+  <rect x="82"  y="89" width="2"  height="7" fill="#050305"/>
+  <rect x="104" y="89" width="2"  height="7" fill="#050305"/>
+  <rect x="123" y="89" width="2"  height="7" fill="#050305"/>
+  <!-- Lower bands -->
+  <rect x="14" y="96"  width="132" height="5" fill="#5c3020"/>
+  <rect x="14" y="101" width="132" height="5" fill="#a06030"/>
+  <rect x="14" y="106" width="132" height="5" fill="#4e2618"/>
+  <rect x="14" y="111" width="132" height="5" fill="#a06028"/>
+  <rect x="14" y="116" width="132" height="5" fill="#5c2c1c"/>
+  <rect x="14" y="121" width="132" height="5" fill="#a07038"/>
+  <rect x="14" y="126" width="132" height="5" fill="#3e1e14"/>
+  <rect x="14" y="131" width="132" height="5" fill="#946030"/>
+  <rect x="14" y="136" width="132" height="5" fill="#563028"/>
+  <rect x="14" y="141" width="132" height="5" fill="#885030"/>
+
+  <!-- Storm spot -->
+  <rect x="52" y="70" width="20" height="9" fill="#7a2c1c"/>
+  <rect x="54" y="71" width="14" height="7" fill="#9e3c24"/>
+  <rect x="56" y="72" width="8"  height="5" fill="#c06030"/>
+</g>
+
+<!-- Atmosphere halo -->
+<circle cx="80" cy="80" r="74" fill="url(#atmo)"/>
+<circle cx="80" cy="80" r="66" fill="none" stroke="#8a5028" stroke-width="0.7" opacity="0.5"/>
+
+
+<!-- ═══════════════════════════════════
+     TERMINAL TEXT BOX
+═══════════════════════════════════ -->
+<rect x="7" y="110" width="146" height="26"
+      fill="#060408" fill-opacity="0.85"
+      stroke="#7a5818" stroke-width="1"/>
+
+<g stroke="#c0900c" stroke-width="0.25" opacity="0.09">
+  <line x1="8" y1="115" x2="152" y2="115"/>
+  <line x1="8" y1="120" x2="152" y2="120"/>
+  <line x1="8" y1="125" x2="152" y2="125"/>
+  <line x1="8" y1="130" x2="152" y2="130"/>
+</g>
+
+<line x1="7" y1="110" x2="153" y2="110" stroke="#c09020" stroke-width="0.5" opacity="0.5"/>
+
+<text x="13" y="126"
+      font-family="'Courier New', monospace"
+      font-size="10" font-weight="bold"
+      fill="#7a5818" opacity="0.75"
+      filter="url(#amber)">></text>
+<text x="22" y="126"
+      font-family="'Courier New', monospace"
+      font-size="10" font-weight="bold"
+      letter-spacing="1"
+      fill="#c89828"
+      filter="url(#amber)">DH Tau B</text>
+<rect x="86" y="116" width="7" height="10" fill="#c89828" opacity="0.85"/>
+
+</svg>

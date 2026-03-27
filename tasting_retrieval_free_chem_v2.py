@@ -55,6 +55,7 @@ from petitRADTRANS.chemistry.prt_molmass import get_species_molar_mass
 convert_all(clean=True) # convert all line files to pRT3 format
 '''
 workpath = '/data2/peng/'
+results_root = pathlib.Path(workpath) / 'retrievals'
 
 
 class Target:
@@ -515,7 +516,7 @@ class pRT_spectrum:
 
         elif self.normalize_flux == 'savgol':
             # Normalize each order/detector chunk separately to mirror the data preprocessing.
-            window_length = 101
+            window_length = 301
             polyorder = 2
 
             for order in range(self.target.n_orders):
@@ -670,7 +671,7 @@ class Retrieval:
         ####################################################################
         
         self.n_params = len(parameters.free_params)
-        self.output_dir = pathlib.Path(f'{os.getcwd()}/retrievals/{self.job_id}_N{self.N_live_points}_ev{self.evidence_tolerance}')
+        self.output_dir = results_root / f'{self.job_id}_N{self.N_live_points}_ev{self.evidence_tolerance}_Norm{self.normalize_flux}_PerChipScale{self.per_chip_scaling}'
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.lbl_opacity_sampling=3
@@ -700,7 +701,7 @@ class Retrieval:
 
     def get_atmosphere_objects(self,redo=True):
 
-        file=pathlib.Path(f'atmosphere_objects_{self.job_id}_N{self.N_live_points}.pickle')
+        file = results_root / f'atmosphere_objects_{self.job_id}_N{self.N_live_points}.pickle'
         if file.exists() and redo==False:
             with open(file,'rb') as file:
                 atmosphere_objects=pickle.load(file)
@@ -888,8 +889,8 @@ class Retrieval:
 
 night = '2022-12-31'
 
-spectra_AB = np.load(f'/data2/peng/{night}/extracted_spectra_combined_sigmaclipper.npy') #(3, 5, 2048)
-spectra_AB_err = np.load(f'/data2/peng/{night}/extracted_spectra_combined_err_sigmaclipper.npy') #(3, 5, 2048)
+spectra_AB = np.load(f'/data2/peng/{night}/extracted_spectra_combined_flux_cal.npy') #(3, 5, 2048)
+spectra_AB_err = np.load(f'/data2/peng/{night}/extracted_spectra_combined_err_flux_cal.npy') #(3, 5, 2048)
 
 path_wl_cal = workpath + night +'/cal/WLEN_K2166_V_DH_Tau_A+B_center.fits'
 wave_hdu = fits.open(path_wl_cal)
@@ -899,8 +900,8 @@ spectra_AB_reordered = np.transpose(spectra_AB, (1, 0, 2))  # (5, 3, 2048)
 spectra_AB_err_reordered = np.transpose(spectra_AB_err, (1, 0, 2))  # (5, 3, 2048)
 wave_reordered = np.transpose(wave, (1, 0, 2))  # (5, 3, 2048)
 
-Normalize_method = 'median' # choose normalization method: 'median' or 'savgol'
-scaling_parameter = False  # whether to include scaling parameters in the retrieval (phi and s2)
+Normalize_method = False # choose normalization method: 'median' or 'savgol'
+scaling_parameter = True  # whether to include scaling parameters in the retrieval (phi and s2)
 
 #Normalize the spectra before flattening
 
@@ -915,7 +916,7 @@ if Normalize_method == 'median':
             spectra_AB_err_reordered[order, det] /= median_flux
 
 elif Normalize_method == 'savgol':
-    window_length = 101  # must be odd number
+    window_length = 301  # must be odd number
     polyorder = 2
 
     #create a copy of the specra to hole the continuum proxy (low-frequency feature) for each order and detector
@@ -1015,10 +1016,10 @@ mask = np.isfinite(spectra_AB_flat) & np.isfinite(spectra_AB_err_flat)
 #------------set up retriveal parameters----------------#
 #-------------------------------------------------------#
 
-constant_params = {#'rv': 31,
-                   #'log_g': 3.75,
+constant_params = {'rv': 32,
+                   #'log_g': 3.5,
                    #'T0' : 3000, # bottom of the atmosphere (hotter)
-                   #'T1' : 2000,
+                   #'T1' : 2000, 
                    #'T2' : 1200,
                    #'T3' : 800,
                    #'T4' : 400, # top of atmosphere (cooler)
@@ -1027,8 +1028,8 @@ constant_params = {#'rv': 31,
 # free parameters we will retrieve - format: key, prior range, mathtext label (for plotting)
 # For uniform prior: 'param': ([min, max], r'label')
 # For Gaussian prior: 'param': ({'type': 'gaussian', 'mu': mean, 'sigma': std}, r'label')
-free_params = {'rv': ([20, 40], r'$v_{\rm rad}$'), # km/s - uniform prior
-                'vsini': ([5,15], r'$v$ sin$i$'), # km/s
+free_params = {#'rv': ([20, 40], r'$v_{\rm rad}$'), # km/s - uniform prior
+                'vsini': ([0,20], r'$v$ sin$i$'), # km/s
                 #'vsini': ({'type': 'gaussian', 'mu': 9.6, 'sigma': 0.5}, r'$v$ sin$i$'), # km/s
                 'log_g':({'type': 'gaussian', 'mu': 3.5, 'sigma': 0.1}, r'log $g$'),
                 'T0' : ([1000,5000], r'$T_0$'), # bottom of the atmosphere (hotter)
@@ -1042,7 +1043,7 @@ free_params = {'rv': ([20, 40], r'$v_{\rm rad}$'), # km/s - uniform prior
                 'log_CH4':([-12,-1], r'log CH$_4$')
                 }
 
-N_points = 200
+N_points = 500
 evidence_tol = 0.5
 
 
@@ -1089,9 +1090,9 @@ np.place(retrieval.data_flux, retrieval.data_flux==0, np.inf)
 np.place(model_flux, model_flux==0, np.inf)
 np.place(model_flux_scaled, model_flux_scaled==0, np.inf)
 
-np.save(f'/data2/peng/retrievals/{retrieval.job_id}_N{retrieval.N_live_points}_ev{retrieval.evidence_tolerance}/retrieval_model_flux.npy', model_flux)
-np.save(f'/data2/peng/retrievals/{retrieval.job_id}_N{retrieval.N_live_points}_ev{retrieval.evidence_tolerance}/retrieval_model_flux_scaled.npy', model_flux_scaled)
-np.save(f'/data2/peng/retrievals/{retrieval.job_id}_N{retrieval.N_live_points}_ev{retrieval.evidence_tolerance}/retrieval_model_wave.npy', retrieval.data_wave)
+np.save(retrieval.output_dir / 'retrieval_model_flux.npy', model_flux)
+np.save(retrieval.output_dir / 'retrieval_model_flux_scaled.npy', model_flux_scaled)
+np.save(retrieval.output_dir / 'retrieval_model_wave.npy', retrieval.data_wave)
 
 
 #----------------------------------------------------------------------#
@@ -1133,7 +1134,7 @@ for order in range(5):
 
 plt.tight_layout()
 
-plt.savefig(f'/data2/peng/retrievals/{retrieval.job_id}_N{retrieval.N_live_points}_ev{retrieval.evidence_tolerance}/retrieval_data_model_residuals.png', dpi=300)
+plt.savefig(retrieval.output_dir / 'retrieval_data_model_residuals.png', dpi=300)
 
 ################################---PLOT 2: data and model spectrum for each order and detector---###################################
 
@@ -1190,7 +1191,7 @@ plt.tight_layout()
 
 #plt.xlim(2245.229,2259.888)
 
-plt.savefig(f'/data2/peng/retrievals/{retrieval.job_id}_N{retrieval.N_live_points}_ev{retrieval.evidence_tolerance}/retrieval_data_model_spectrum.png', dpi=300)
+plt.savefig(retrieval.output_dir / 'retrieval_data_model_spectrum.png', dpi=300)
 #plt.show()
 
 
@@ -1208,7 +1209,7 @@ plt.xlabel('Pressure (bar)')
 plt.ylabel('Temperature (K)')
 
 
-plt.savefig(f'/data2/peng/retrievals/{retrieval.job_id}_N{retrieval.N_live_points}_ev{retrieval.evidence_tolerance}/retrieval_PT_profile.png', dpi=300)
+plt.savefig(retrieval.output_dir / 'retrieval_PT_profile.png', dpi=300)
 ##plt.show()
 
 ######################### PLOT 4: data and model spectrum for each order and detector after binning/smoothing the original data to better see the overall trend (noisy data)---###################################
@@ -1254,7 +1255,7 @@ for det in range(3):
 
 
 
-plt.savefig(f'/data2/peng/retrievals/{retrieval.job_id}_N{retrieval.N_live_points}_ev{retrieval.evidence_tolerance}/retrieval_data_model_spectrum_binned.png', dpi=300)
+plt.savefig(retrieval.output_dir / 'retrieval_data_model_spectrum_binned.png', dpi=300)
 #plt.show()
 print ('+++++++++++ Retrieval and plotting complete +++++++++++')
 print ('Arrivederci! ^_^')

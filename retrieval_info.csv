@@ -1,0 +1,29 @@
+Retrieval Name	Model	                Data 	                                Comment	                                    Results
+1528526	        Scaling, Non-Norm	    Norm-median	                            Scaling factor optimized, 	                Weak constraints on vsini, high log g, very high abundance
+
+1640499	        Scaling, Norm-savgol	Norm-savgol	                            Scaling factor optimized, 	                No strong offsets seen,  weak constraints on vsini, good constraints on PT profile, abundance ??
+
+2027458	        Scaling, Non-Norm	    Non-Norm	                            Scaling factor optimized, 	                Strong offsets in some chips, weak constraints on vsini, abundance, better constraints on PT profile.
+
+2166017	        Scaling, Norm-median	Scaling, Norm-median	                Scaling factor optimised	
+
+3162500	        No scaling, Norm-savgol	No scaling, Norm-savgol	                No scaling factor for detectors and orders. Normalization as the only control of the spectral fitting	RV is completely out of fit, and vsini as well. Need to figure out how to control the dynamical parameters. S/N of the spectrum seems too low. 
+
+710214	        Scaling, Norm-median	Scaling, Norm-median		                                                        Results are wired. There is offset between model spectra and data. 
+
+2616585 	    No Scaling, Norm-savgol	No Scaling, Norm-savgol		                                                        Results look normal but RV is lost.
+
+2475296	        No Scaling, Norm-median	No Scaling, Norm-median	                V_bary = 0 to use native RV for retrieval	RV is close to the cross-correlation result, but the results look very wired. I don’t understand:   1. It converges too fast 2. The final spectrum looks like a sketch 3. The posterior distribution is binomial. 
+
+2655966
+
+2866411  N=500  Scaling, No norm.       Scaling, No-norm                                                                    RV is lost. 
+
+2949918  N=1000 No scaling, Norm-savgol No scaling, Norm-savgol                 RV[0,50], log_H2O[-10,-1]
+
+3153293  N=1000 No scaling, Norm-savgol No scaling, Norm-savgol                 RV fixed at 31km/s as a constant param,     Results are not correct. Log g ~ 1.5, vsini ~ 0.8. However the CO abundances look not as low as before.
+                                                                                V_bary = 0 
+772437   N=200  Yes scaling, No Norm.   Yes scaling, No Norm                    RV range [20, 40]                           RV looks close to cc RV, vsini is still mismatched. CO abundance is unphysically high ( higher than H2O)
+1335073  N=200  No scaling, Norm-median No scaling, Norm-median                 vsini range [5, 15], log g N(3.5, 0.1)      log g is out of fit. 
+1331743  N=200. No scaling, Norm-savgol.No scaling, Norm-savgol.                RV range [20,40], vsini[5, 15]              Wired C/O ratio and C12/C13 ratio but dynamtical parameters are fine. 
+
