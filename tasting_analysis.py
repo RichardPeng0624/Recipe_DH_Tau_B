@@ -324,14 +324,14 @@ def run_equil_chemistry_workflow(workpath: Path | str, retrieval_id: str):
     Chemistry diagnostics for an equilibrium-chemistry retrieval.
 
     The posterior columns are the free parameters in order:
-        rv, vsini, log_g, T0–T4, FeH, C/O, log_12CO_13CO
-    (plus non-retrieved keys [Fe/H], phi, s2, chi2, lnZ stored only in params_dict).
+        rv, vsini, log_g, T0–T4, C_H, C/O, log_12CO_13CO
+    (plus non-retrieved keys [C/H], phi, s2, chi2, lnZ stored only in params_dict).
 
     Returns
     -------
     dict with keys:
         posterior, columns,
-        co_samples, feh_samples, c12c13_samples,
+        co_samples, ch_samples, c12c13_samples,
         summary (pd.DataFrame with median ± 1/3σ CI rows)
     """
     workpath = Path(workpath)
@@ -341,25 +341,25 @@ def run_equil_chemistry_workflow(workpath: Path | str, retrieval_id: str):
     with open(retrieval_dir / "final_params_dict.pickle", "rb") as f:
         params_dict = pickle.load(f)
 
-    non_retrieved_keys = {"[Fe/H]", "phi", "s2", "chi2", "lnZ"}
+    non_retrieved_keys = {"[C/H]", "phi", "s2", "chi2", "lnZ"}
     param_keys_in_order = [k for k in params_dict.keys() if k not in non_retrieved_keys]
     param_keys_in_order = param_keys_in_order[: posterior.shape[1]]
 
     df_post = pd.DataFrame(posterior, columns=param_keys_in_order)
 
-    required = {"FeH", "C/O", "log_12CO_13CO"}
+    required = {"C_H", "C/O", "log_12CO_13CO"}
     if not required.issubset(df_post.columns):
         missing = required.difference(df_post.columns)
         raise KeyError(f"Missing required parameters in posterior columns: {missing}")
 
     co_samples     = df_post["C/O"].to_numpy()
-    feh_samples    = df_post["FeH"].to_numpy()
+    ch_samples     = df_post["C_H"].to_numpy()
     c12c13_samples = 10.0 ** df_post["log_12CO_13CO"].to_numpy()
 
     summary = pd.DataFrame(
         [
             summarize_ci(co_samples,     "C/O"),
-            summarize_ci(feh_samples,    "[Fe/H]"),
+            summarize_ci(ch_samples,     "[C/H]"),
             summarize_ci(c12c13_samples, "12CO/13CO"),
         ]
     )
@@ -368,7 +368,7 @@ def run_equil_chemistry_workflow(workpath: Path | str, retrieval_id: str):
         "posterior": posterior,
         "columns": param_keys_in_order,
         "co_samples": co_samples,
-        "feh_samples": feh_samples,
+        "ch_samples": ch_samples,
         "c12c13_samples": c12c13_samples,
         "summary": summary,
     }

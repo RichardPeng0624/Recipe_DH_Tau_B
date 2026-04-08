@@ -348,7 +348,7 @@ class pRT_spectrum:
         self.MMW = self.mass_fractions['MMW']
     
     def read_species_info(self,species,info_key):
-        species_info = pd.read_csv(os.path.join('species_info.csv'), index_col=0)
+        species_info = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'species_info.csv'), index_col=0)
         if info_key == 'pRT_name':
             return species_info.loc[species,info_key]
         if info_key == 'mass':
@@ -361,7 +361,7 @@ class pRT_spectrum:
             return species_info.loc[species,'mathtext_name']
     
     def free_chemistry(self,line_species,params):
-        species_info = pd.read_csv(os.path.join('species_info.csv'), index_col=0)
+        species_info = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'species_info.csv'), index_col=0)
         VMR_He = 0.15
         VMR_wo_H2 = 0 + VMR_He  # Total VMR without H2, starting with He
         mass_fractions = {} # Create a dictionary for all used species
@@ -721,7 +721,7 @@ class Retrieval:
 
     def get_species(self, param_dict):
         """Get list of pRT opacity species names. Handles both free and equilibrium chemistry modes."""
-        species_info = pd.read_csv(os.path.join('species_info.csv'), index_col=0)
+        species_info = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'species_info.csv'), index_col=0)
 
         if param_dict.get('chemistry', 'free') == 'equilibrium':
             # Equilibrium chemistry: species determined by K-band science goals,
@@ -937,8 +937,8 @@ class Retrieval:
 
 night = '2022-12-31'
 
-spectra_AB = np.load(f'/data2/peng/{night}/extracted_spectra_combined_flux_cal.npy') #(3, 5, 2048)
-spectra_AB_err = np.load(f'/data2/peng/{night}/extracted_spectra_combined_err_flux_cal.npy') #(3, 5, 2048)
+spectra_AB = np.load(f'/data2/peng/{night}/extracted_spectra_combined_sigmaclipper.npy') #(3, 5, 2048)
+spectra_AB_err = np.load(f'/data2/peng/{night}/extracted_spectra_combined_err_sigmaclipper.npy') #(3, 5, 2048)
 
 path_wl_cal = workpath + night +'/cal/WLEN_K2166_V_DH_Tau_A+B_center.fits'
 wave_hdu = fits.open(path_wl_cal)
@@ -948,8 +948,8 @@ spectra_AB_reordered = np.transpose(spectra_AB, (1, 0, 2))  # (5, 3, 2048)
 spectra_AB_err_reordered = np.transpose(spectra_AB_err, (1, 0, 2))  # (5, 3, 2048)
 wave_reordered = np.transpose(wave, (1, 0, 2))  # (5, 3, 2048)
 
-Normalize_method = False # choose normalization method: 'median' or 'savgol'
-scaling_parameter = 'Single'  # whether to include scaling parameters in the retrieval (phi and s2)
+Normalize_method = 'savgol' # choose normalization method: 'median' or 'savgol'
+scaling_parameter = False  # whether to include scaling parameters in the retrieval (phi and s2)
 
 #Normalize the spectra before flattening
 
@@ -1087,19 +1087,20 @@ constant_params = {#'rv': 32,
 # For uniform prior: 'param': ([min, max], r'label')
 # For Gaussian prior: 'param': ({'type': 'gaussian', 'mu': mean, 'sigma': std}, r'label')
 free_params = {#'rv': ([27, 37], r'$v_{\rm rad}$'), # km/s - uniform prior
-                'rv': ({'type': 'gaussian', 'mu': 32, 'sigma': 0.1}, r'$v_{\rm rad}$'), # km/s - Gaussian prior based on literature value
-                'vsini': ([1,20], r'$v$ sin$i$'), # km/s
+                'rv': ({'type': 'gaussian', 'mu': 32, 'sigma': 0.2}, r'$v_{\rm rad}$'), # km/s - Gaussian prior based on literature value
+                'vsini': ([0,20], r'$v$ sin$i$'), # km/s
                 #'vsini': ({'type': 'gaussian', 'mu': 9.6, 'sigma': 0.5}, r'$v$ sin$i$'), # km/s
-                'log_g':({'type': 'gaussian', 'mu': 3.5, 'sigma': 0.1}, r'log $g$'),
-                'T0' : ([1000,5000], r'$T_0$'), # bottom of the atmosphere (hotter)
-                'T1' : ([1000,4000], r'$T_1$'),
-                'T2' : ([500,3200], r'$T_2$'),
-                'T3' : ([250,2600], r'$T_3$'),
-                'T4' : ([120,2100], r'$T_4$'), # top of atmosphere (cooler)
-                'log_H2O':([-10,-1], r'log H$_2$O'), # if free chemistry, define VMRs
-                'log_12CO':([-12,-1], r'log $^{12}$CO'), #the value is log of volume mixing ratio
-                'log_13CO':([-12,-1], r'log $^{13}$CO'),
-                'log_CH4':([-12,-1], r'log CH$_4$')
+                'log_g':({'type': 'gaussian', 'mu': 3.5, 'sigma': 0.2}, r'log $g$'),
+    'T0':             ([1500, 4000], r'$T_0$'),   # 10 bar: deep adiabat, ~2500-3500K expected
+    'T1':             ([1000, 3500], r'$T_1$'),   #   0.1 bar: photosphere, ~Teff~2200K expected
+    'T2':             ([500,  3000], r'$T_2$'),   # 0.01 bar: upper photosphere
+    'T3':             ([300,  1600], r'$T_3$'),   # 1e-3 bar: high atmosphere
+    'T4':             ([100,  1200], r'$T_4$'),   # 1e-4 bar: top of atmosphere
+    'T5':             ([100,  600], r'$T_5$'),   # 1e-5 bar: top of atmosphere (coolest)
+                'log_H2O':([-12,-2], r'log H$_2$O'), # if free chemistry, define VMRs, follow Picos et al. 2024 priors for GQ Lup b
+                'log_12CO':([-12,-2], r'log $^{12}$CO'), #the value is log of volume mixing ratio
+                'log_13CO':([-12,-2], r'log $^{13}$CO'),
+                'log_CH4':([-12,-2], r'log CH$_4$')
                 }
 
 # -------------------------------------------------------#
@@ -1130,7 +1131,7 @@ free_params = {#'rv': ([27, 37], r'$v_{\rm rad}$'), # km/s - uniform prior
 #     # 'log_Pquench': ([-6, 2], r'log $P_{\rm quench}$'),
 # }
 
-N_points = 500
+N_points = 600
 evidence_tol = 0.5
 
 

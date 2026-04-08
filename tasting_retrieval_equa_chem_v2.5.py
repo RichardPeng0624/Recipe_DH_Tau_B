@@ -1,3 +1,6 @@
+# Run command:
+# nohup /home/peng/.conda/envs/conda_env/bin/mpiexec -n 20 /home/peng/.conda/envs/conda_env/bin/python /data2/peng/Recipe_DH_Tau_B/tasting_retrieval_equa_chem_v2.5.py > /data2/peng/Recipe_DH_Tau_B/log_retrievals/save_output_Normmedian_PerChipScalingFalse.log &
+
 import getpass
 import os
 '''
@@ -710,7 +713,7 @@ class Retrieval:
 
         self.lbl_opacity_sampling=3
         self.n_atm_layers=50
-        self.pressure = np.logspace(-6,2,self.n_atm_layers)  # like in deRegt+2024
+        self.pressure = np.logspace(-6,1,self.n_atm_layers)  # like in deRegt+2024
         #err_masked = np.where(self.mask_isfinite, self.data_err, np.nan)
         err_masked = self.data_err[self.mask_isfinite]
         self.Cov = Covariance(err=err_masked) # simple diagonal covariance matrix with masked data but only valid pixels
@@ -950,8 +953,8 @@ class Retrieval:
 
 night = '2022-12-31'
 
-spectra_AB = np.load(f'/data2/peng/{night}/extracted_spectra_combined_flux_cal.npy') #(3, 5, 2048)
-spectra_AB_err = np.load(f'/data2/peng/{night}/extracted_spectra_combined_err_flux_cal.npy') #(3, 5, 2048)
+spectra_AB = np.load(f'/data2/peng/{night}/extracted_spectra_combined_sigmaclipper.npy') #(3, 5, 2048)
+spectra_AB_err = np.load(f'/data2/peng/{night}/extracted_spectra_combined_err_sigmaclipper.npy') #(3, 5, 2048)
 
 path_wl_cal = workpath + night +'/cal/WLEN_K2166_V_DH_Tau_A+B_center.fits'
 wave_hdu = fits.open(path_wl_cal)
@@ -961,7 +964,7 @@ spectra_AB_reordered = np.transpose(spectra_AB, (1, 0, 2))  # (5, 3, 2048)
 spectra_AB_err_reordered = np.transpose(spectra_AB_err, (1, 0, 2))  # (5, 3, 2048)
 wave_reordered = np.transpose(wave, (1, 0, 2))  # (5, 3, 2048)
 
-Normalize_method = 'median' # choose normalization method: 'median' or 'savgol'
+Normalize_method = 'savgol' # choose normalization method: 'median' or 'savgol'
 scaling_parameter = False  # whether to include scaling parameters in the retrieval (phi and s2)
 
 #Normalize the spectra before flattening
@@ -1100,18 +1103,19 @@ constant_params = {
 free_params = {
     'rv':             ({'type': 'gaussian', 'mu': 32, 'sigma': 0.2}, r'$v_{\rm rad}$'),  # km/s
     'vsini':          ([0, 20],                                        r'$v$ sin$i$'),     # km/s
-    'log_g':          ({'type': 'gaussian', 'mu': 3.5, 'sigma': 0.1}, r'log $g$'),
+    'log_g':          ({'type': 'gaussian', 'mu': 3.5, 'sigma': 0.2}, r'log $g$'),
     # T-P anchor point priors (5 knots, log P = [+2, 0, -2, -4, -6] bar)
     # Motivated by Sonora Diamondback models (Marley+2021) at Teff~2200K, log g~3.5,
     # and beta Pic b CRIRES+ retrieval (Landman+2024).
     # K-band photosphere is at P~0.1-1 bar, so T1 should be ~Teff.
     # Prior upper bounds cap the unphysical ~5000K isothermal escape route.
-    'T0':             ([1500, 3500], r'$T_0$'),   # 100 bar: deep adiabat, ~2500-3500K expected
-    'T1':             ([1200, 3000], r'$T_1$'),   #   1 bar: photosphere, ~Teff~2200K expected
-    'T2':             ([700,  2200], r'$T_2$'),   # 0.01 bar: upper photosphere
-    'T3':             ([300,  1600], r'$T_3$'),   # 1e-4 bar: high atmosphere
-    'T4':             ([100,  1200], r'$T_4$'),   # 1e-6 bar: top of atmosphere
-    #'T5':             ([300,  600], r'$T_5$'),   # top of atmosphere (coolest)
+    'T0':             ([1500, 4000], r'$T_0$'),   # 10 bar: deep adiabat, ~2500-3500K expected
+    'T1':             ([1000, 3500], r'$T_1$'),   #   0.1 bar: photosphere, ~Teff~2200K expected
+    'T2':             ([500,  3000], r'$T_2$'),   # 0.01 bar: upper photosphere
+    'T3':             ([300,  1600], r'$T_3$'),   # 1e-3 bar: high atmosphere
+    'T4':             ([100,  1200], r'$T_4$'),   # 1e-4 bar: top of atmosphere
+    'T5':             ([100,  600], r'$T_5$'),   # 1e-5 bar: top of atmosphere (coolest)
+    'T6':             ([100,  600], r'$T_6$'),   # 1e-6 bar: top of atmosphere (coolest)
     'FeH':            ([-2.0, 3.0], r'[Fe/H]'),   # log10 metallicity; table: -2 to +3; solar = 0.0
     'C/O':            ([0.1,  1.0], r'C/O'),       # C/O ratio; solar ≈ 0.55
     'log_12CO_13CO':  ([0.0,  6.0], r'log $^{12}$CO/$^{13}$CO'),  # log10 isotopologue ratio; solar log10(70) ≈ 1.85
@@ -1119,7 +1123,7 @@ free_params = {
     # 'log_Pquench': ([-6, 2], r'log $P_{\rm quench}$'),
 }
 
-N_points = 500
+N_points = 600
 evidence_tol = 0.5
 
 
