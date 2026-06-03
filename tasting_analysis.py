@@ -319,6 +319,76 @@ def run_chemistry_workflow(workpath: Path | str, retrieval_id: str):
     }
 
 
+def run_free_chemistry_workflow(workpath: Path | str, retrieval_id: str):
+    """
+    Chemistry diagnostics for a free-chemistry retrieval
+    (species: log_H2O, log_12CO, log_13CO, log_CH4).
+
+    Computes per-sample posterior distributions of:
+      - C/O   = (12CO + 13CO + CH4) / (H2O + 12CO + 13CO)
+      - [C/H] (×solar, dex) using Asplund et al. (2021) A(C) = 8.46
+              H counted from all H-bearing species + H2 background
+              (VMR_He = 0.15, VMR_H2 = 1 − 0.15 − Σ trace VMRs)
+      - 12CO/13CO = VMR(12CO) / VMR(13CO)
+
+    Returns
+    -------
+    dict with keys:
+        posterior, columns,
+        co_samples, ch_xsolar_samples, c12c13_samples,
+        summary (pd.DataFrame with median ± 1/3σ CI rows)
+    """
+    workpath = Path(workpath)
+    retrieval_dir = workpath / "retrievals" / retrieval_id
+
+    posterior = np.load(retrieval_dir / "final_posterior.npy")
+    with open(retrieval_dir / "final_params_dict.pickle", "rb") as f:
+        params_dict = pickle.load(f)
+
+    non_retrieved_keys = {"[C/H]", "[C/H]_xsolar", "C/O", "phi", "s2", "chi2",
+                          "phi_N2", "chi2_N2", "lnZ"}
+    param_keys_in_order = [k for k in params_dict.keys() if k not in non_retrieved_keys]
+    param_keys_in_order = param_keys_in_order[: posterior.shape[1]]
+
+    df_post = pd.DataFrame(posterior, columns=param_keys_in_order)
+
+    required = {"log_H2O", "log_12CO", "log_13CO", "log_CH4"}
+    if not required.issubset(df_post.columns):
+        missing = required.difference(df_post.columns)
+        raise KeyError(f"Missing required parameters in posterior columns: {missing}")
+
+    VMR_He   = 0.15
+    vmr_h2o  = 10.0 ** df_post["log_H2O"].to_numpy()
+    vmr_12co = 10.0 ** df_post["log_12CO"].to_numpy()
+    vmr_13co = 10.0 ** df_post["log_13CO"].to_numpy()
+    vmr_ch4  = 10.0 ** df_post["log_CH4"].to_numpy()
+
+    vmr_h2 = 1.0 - VMR_He - vmr_h2o - vmr_12co - vmr_13co - vmr_ch4
+
+    C = vmr_12co + vmr_13co + vmr_ch4
+    O = vmr_h2o  + vmr_12co + vmr_13co
+    H = 2.0 * vmr_h2o + 4.0 * vmr_ch4 + 2.0 * vmr_h2  # H atoms per mixture molecule
+
+    co_samples        = C / O
+    ch_xsolar_samples = np.log10(C / H) - (8.46 - 12.0)   # [C/H] in dex (×solar)
+    c12c13_samples    = vmr_12co / vmr_13co
+
+    summary = pd.DataFrame([
+        summarize_ci(co_samples,        "C/O"),
+        summarize_ci(ch_xsolar_samples, "[C/H] (×solar, dex)"),
+        summarize_ci(c12c13_samples,    "12CO/13CO"),
+    ])
+
+    return {
+        "posterior":          posterior,
+        "columns":            param_keys_in_order,
+        "co_samples":         co_samples,
+        "ch_xsolar_samples":  ch_xsolar_samples,
+        "c12c13_samples":     c12c13_samples,
+        "summary":            summary,
+    }
+
+
 def run_equil_chemistry_workflow(workpath: Path | str, retrieval_id: str):
     """
     Chemistry diagnostics for an equilibrium-chemistry retrieval.
