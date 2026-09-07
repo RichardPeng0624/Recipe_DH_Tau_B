@@ -1,0 +1,104 @@
+% ============================================================================
+% DH Tau B retrieval free parameters and priors.
+% Source: Guidebook_GAStronomy_Piette_v4.2.py (make_free_params_equilibrium,
+% make_free_params_equil_chem_cloudy) cross-checked against the driver scripts
+% tasting_retrieval_equa_chem_v6.1_piette_cloudfree.py (absolute-flux
+% benchmark) and tasting_retrieval_equa_chem_v6.1_piette_cloudfree_mednorm.py
+% (calibration-sensitivity variant).
+%
+% Table 1 = adopted cloud-free equilibrium-chemistry model (current species
+%           set, WITHOUT Na/Ca -- see retrieval_framework_notes.md Sec 7 for
+%           why this differs from the completed benchmark job 2027997, which
+%           still includes log_Na/log_Ca; a footnote flags this explicitly).
+% Table 2 = the 5 additional EddySed cloud parameters (optional extension).
+%
+% \mathcal{N}(mu, sigma) = Gaussian prior; \mathcal{U}(a, b) = uniform prior.
+% Requires: deluxetable (AASTeX) or swap the environment for a plain
+% `table`+`tabular` pair if not using the AAS journal class.
+% ============================================================================
+
+\begin{deluxetable}{llll}
+\tablecaption{Free parameters and priors for the DH Tau B equilibrium-chemistry
+retrieval (cloud-free configuration). \label{tab:retrieval_priors}}
+\tablehead{
+\colhead{Parameter} & \colhead{Description} & \colhead{Prior} & \colhead{Unit}
+}
+\startdata
+\multicolumn{4}{l}{\textit{Kinematics}} \\
+$v_{\rm rad,\,N1}$   & Radial velocity, night 1 (topocentric) & $\mathcal{N}(31.5, 1.0)$\tablenotemark{a} & km s$^{-1}$ \\
+$v_{\rm rad,\,N2}$   & Radial velocity, night 2 (topocentric) & $\mathcal{N}(31.5, 1.0)$\tablenotemark{a} & km s$^{-1}$ \\
+$v\sin i$            & Projected rotational velocity          & $\mathcal{U}(1, 20)$   & km s$^{-1}$ \\
+$\epsilon_{\rm LD}$  & Linear limb-darkening coefficient (rotational broadening) & $\mathcal{U}(0, 1)$ & --- \\
+\hline
+\multicolumn{4}{l}{\textit{Bulk properties}\tablenotemark{b}} \\
+$\log g$             & Surface gravity                        & $\mathcal{N}(3.64, 0.20)$ & log$_{10}$(cm s$^{-2}$) \\
+\hline
+\multicolumn{4}{l}{\textit{Temperature--pressure profile} (Piette \& Madhusudhan 2020)} \\
+$T_{\rm anchor}$     & Temperature at $\log P = -0.7$ (0.2 bar) & $\mathcal{U}(1500, 3500)$ & K \\
+$\Delta T_1$         & $T(0.7\,{\rm dex})-T(0.0\,{\rm dex})$ interval & $\mathcal{U}(200, 1000)$ & K \\
+$\Delta T_2$         & $T(0.0)-T(-0.3\,{\rm dex})$ interval    & $\mathcal{U}(0, 600)$   & K \\
+$\Delta T_3$         & $T(-0.3)-T(-0.7\,{\rm dex})$ interval   & $\mathcal{U}(0, 500)$   & K \\
+$\Delta T_4$         & $T(-0.7)-T(-1.0\,{\rm dex})$ interval   & $\mathcal{U}(0, 500)$   & K \\
+$\Delta T_5$         & $T(-1.0)-T(-1.5\,{\rm dex})$ interval   & $\mathcal{U}(0, 700)$   & K \\
+$\Delta T_6$         & $T(-1.5)-T(-3.0\,{\rm dex})$ interval   & $\mathcal{U}(50, 800)$  & K \\
+$\Delta T_7$         & $T(-3.0)-T(-5.0\,{\rm dex})$ interval   & $\mathcal{U}(50, 800)$  & K \\
+\hline
+\multicolumn{4}{l}{\textit{Chemistry} (equilibrium; pRT3 pre-calculated table)} \\
+$[{\rm C/H}]$        & Metallicity proxy (see text for $[{\rm Z/H}]$ derivation) & $\mathcal{U}(-1.5, 1.5)$ & dex \\
+${\rm C/O}$          & Carbon-to-oxygen number ratio            & $\mathcal{U}(0.1, 1.5)$ & --- \\
+$\log(^{12}{\rm CO}/^{13}{\rm CO})$ & Isotopologue ratio (log$_{10}$) & $\mathcal{U}(0.5, 3.0)$ & --- \\
+$[{\rm F/H}]$        & Fluorine abundance proxy (HF; Picos et al.\ 2024 Eq.\ 3) & $\mathcal{U}(-3, 3)$ & dex \\
+\hline
+\multicolumn{4}{l}{\textit{Gaussian-process correlated noise} (Gonz\'alez Picos et al.\ 2025)} \\
+$\log a_{\rm GP}$    & GP amplitude (relative to photon noise)  & $\mathcal{U}(-1, 1)$   & --- \\
+$\log l_{\rm GP}$    & GP correlation length scale              & $\mathcal{U}(-3, 0)$   & log$_{10}$(nm) \\
+\enddata
+\tablenotetext{a}{Gaussian centred on the CCF-derived systemic RV
+(\S~4, RV-prior analysis); some driver scripts instead use per-night-offset
+priors $\mathcal{N}(31.7, 0.5)$ (N1) / $\mathcal{N}(31.9, 0.5)$ (N2) accounting
+for the measured inter-night barycentric drift -- confirm which literal prior
+the quoted job used against its own script before finalizing this value.}
+\tablenotetext{b}{The absolute-flux-calibrated benchmark series (007PM-EQ-GP)
+instead retrieves $\log M/M_{\rm Jup} \sim \mathcal{N}(1.079, 0.145)$ and
+$\log R/R_{\rm Jup} \sim \mathcal{N}(0.415, 0.100)$ (both from Xuan et al.\ 2024
+Table~1 evolutionary-model priors), with $\log g$ derived via $g=GM/R^2$ rather
+than fitted directly; $\log R$ additionally sets the $(R/d)^2$ absolute-flux
+normalisation, $d=135.2$~pc (Gaia DR3). Use the $\log g$-direct
+parameterisation shown above only for the per-chip-median-normalised
+(``mednorm'') or Ruffio-likelihood series, which carry no absolute flux
+information and so cannot separately constrain $M$ and $R$.}
+\tablenotetext{}{The equilibrium-chemistry opacity list is H$_2$O, $^{12}$CO,
+$^{13}$CO, CH$_4$, NH$_3$, H$_2$S, HCN, CO$_2$, FeH, HF (10 species; $^{13}$CO
+derived from $^{12}$CO via the ratio parameter above, HF derived from
+$[{\rm F/H}]$). Na and Ca were retrieved as two additional direct log-VMR
+parameters, $\log X_{\rm Na}\sim\mathcal{U}(-10,-2)$ and
+$\log X_{\rm Ca}\sim\mathcal{U}(-10,-2)$, in early analysis but were dropped
+from the adopted model on 2026-07-07 after an explicit removal test showed no
+parameter shifted by more than $1\sigma$ and the Bayesian evidence was
+unaffected within its uncertainty; the completed absolute-flux benchmark run
+was not re-executed after this simplification (see
+\texttt{retrieval\_framework\_notes.md} \S~7 for the exact reconciliation
+needed before quoting that specific job's parameter count in the paper).}
+\end{deluxetable}
+
+
+\begin{deluxetable}{llll}
+\tablecaption{Additional free parameters for the optional EddySed cloud
+extension (Ackerman \& Marley 2001; priors from Xuan et al.\ 2024 Table~3).
+Appended to Table~\ref{tab:retrieval_priors} when clouds are enabled.
+\label{tab:cloud_priors}}
+\tablehead{
+\colhead{Parameter} & \colhead{Description} & \colhead{Prior} & \colhead{Unit}
+}
+\startdata
+$\log X_{\rm MgSiO_3}$ & MgSiO$_3$ cloud mass-fraction scaling (relative to chemical-equilibrium abundance) & $\mathcal{U}(-2.3, 1.0)$ & dex \\
+$\log X_{\rm Fe}$      & Fe cloud mass-fraction scaling (relative to chemical-equilibrium abundance)          & $\mathcal{U}(-2.3, 1.0)$ & dex \\
+$f_{\rm sed}$          & Sedimentation efficiency (shared across cloud species\tablenotemark{a}) & $\mathcal{U}(0, 10)$    & --- \\
+$\log K_{zz}$          & Eddy diffusion coefficient                             & $\mathcal{U}(5, 13)$    & log$_{10}$(cm$^2$ s$^{-1}$) \\
+$\sigma_{g}$           & Log-normal cloud particle size distribution width      & $\mathcal{U}(1.05, 3.0)$ & --- \\
+\enddata
+\tablenotetext{a}{petitRADTRANS v3's \texttt{calculate\_flux} accepts a single
+scalar \texttt{cloud\_f\_sed}; a per-species $f_{\rm sed}$ as tabulated in
+Xuan et al.\ (2024) is not supported in this implementation and $f_{\rm sed}$
+is shared between MgSiO$_3$ and Fe.}
+\end{deluxetable}
