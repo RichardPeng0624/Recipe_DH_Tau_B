@@ -15,6 +15,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 from astropy.io import fits
 from scipy.optimize import curve_fit
 import csv
@@ -48,6 +49,7 @@ def synth_phot(lam_c, half_width, wl, fl):
     return np.nanmean(fl[m]) if m.sum() > 3 else np.nan
 
 obs = {}
+alma = None
 with open('/data2/peng/paper/data/tables/dh_tau_b_sed_photometry.csv') as f:
     for row in csv.DictReader(f):
         if row['Fnu_Jy'] and row['detection'] == 'detected':
@@ -57,6 +59,11 @@ with open('/data2/peng/paper/data/tables/dh_tau_b_sed_photometry.csv') as f:
                 stat=float(row['Fnu_err_stat_Jy']) if row['Fnu_err_stat_Jy'] else 0.0,
                 sys=float(row['Fnu_err_sys_Jy']) if row['Fnu_err_sys_Jy'] else 0.0,
             )
+        if row['band'] == 'ALMA_B7_companion':
+            alma = dict(lam=float(row['lambda_eff_um']), stat=float(row['Fnu_err_stat_Jy']))
+alma_lim_3sig = 3.0 * alma['stat']
+print(f"\nALMA Band 7 (companion, non-detection): 3-sigma upper limit = "
+      f"{alma_lim_3sig*1e6:.0f} uJy at {alma['lam']:.0f} um")
 
 # ---- anchor: rescale the WHOLE model by a single constant so its Ks matches obs Ks ----
 ks_model_raw = synth_phot(2.159, 0.131, wl_um, flux_Jy_raw)
@@ -163,26 +170,38 @@ print(f"T_bb = {T_bb:.1f} +- {T_bb_err:.1f} K, R_bb = {R_bb:.3f} +- {R_bb_err:.3
       f"({R_bb*R_JUP_M/AU_M:.4f} AU), chi2 = {chi2:.2f} for dof=2")
 
 # ============================================================
-# plot
+# plot -- single continuous log x-axis spanning the full 0.9um-1mm range
+# (no axis break: an ALMA non-detection at 880um is honestly ~40x further
+# out in log-wavelength than the reddest photometry, so it should look
+# that way rather than being squeezed into an artificially adjacent panel)
 # ============================================================
 fig, ax = plt.subplots(figsize=(9.5, 6.5))
 
 ax.plot(wl_um, flux_Jy, color='#3b6ba5', lw=1.0, alpha=0.9,
-        label=f'Atmosphere model, anchored to Ks ({(anchor_factor-1)*100:+.1f}% vs. raw retrieval R/d scaling)')
+        label=f'Best-fit upper atmosphere model')
 
-wl_bb = np.linspace(0.9, 20, 500)
+wl_bb = np.linspace(0.9, 200, 2000)
 fnu_bb_curve = fnu_bb_model(wl_bb, T_bb, R_bb)
-atm_on_bb = np.interp(wl_bb, wl_um, flux_Jy)
+# atmosphere model itself only extends to ~21um -- beyond that, extend it
+# with a Rayleigh-Jeans tail (Fnu ~ lambda^-2, anchored to the model's own
+# edge value) rather than either flat-extrapolating or hard-cutting to 0,
+# both of which put an unphysical kink in the total-model curve
+atm_edge_wl, atm_edge_val = wl_um[-1], flux_Jy[-1]
+atm_on_bb = np.where(
+    wl_bb <= atm_edge_wl,
+    np.interp(wl_bb, wl_um, flux_Jy),
+    atm_edge_val * (wl_bb / atm_edge_wl) ** -2,
+)
 ax.plot(wl_bb, fnu_bb_curve, color='#e07b39', lw=1.2, ls='--',
-        label=f'Blackbody excess fit (T={T_bb:.0f}$\\pm${T_bb_err:.0f} K, R={R_bb:.2f} R$_{{Jup}}$)')
+        label=f'Blackbody excess')
 ax.plot(wl_bb, atm_on_bb + fnu_bb_curve, color='#2a9d5c', lw=1.2, label='Atmosphere + blackbody (total model)')
 
 sw = np.load(f'{PERM}/sinfoni_wl_um.npy')
 sf_Jy = np.load(f'{PERM}/sinfoni_flux_Jy_scaled.npy')
-ax.plot(sw, sf_Jy, color='#999999', lw=0.5, alpha=0.6, label="SINFONI J/H/K spectrum (anchored to Ks)")
+ax.plot(sw, sf_Jy, color='#999999', lw=0.5, alpha=0.6, label="SINFONI J/H/K spectrum (scaled)")
 
 ax.errorbar(bin_centers, bin_flux, yerr=bin_err, fmt='.', color='#5c4d8a', ms=4, elinewidth=0.6,
-            alpha=0.75, zorder=4, label='CRIRES+ K-band data, binned (both nights, flux-calibrated)')
+            alpha=0.75, zorder=4, label='CRIRES+ K-band data (binned)')
 
 for name, lam, hw in BANDS:
     o = obs.get(name)
@@ -194,21 +213,31 @@ for name, lam, hw in BANDS:
 
 for i, (name, lam, hw, zp) in enumerate(PREDICT_BANDS):
     ax.scatter(lam, model_predict[name], marker='D', facecolors='#f0a03b', edgecolors='#8a5a10', s=60, zorder=7,
-               label="Model-predicted L'/M' (no data)" if i == 0 else None)
+               label="Model-predicted L'/M' photometry" if i == 0 else None)
     ax.annotate(name, (lam, model_predict[name]), textcoords="offset points", xytext=(0, 8),
                 fontsize=8, ha='center', color='#8a5a10')
+
+# --- ALMA Band 7 3-sigma non-detection limit, plotted on the same axis ---
+alma_freq_GHz = C_LIGHT / (alma['lam'] * 1e-6) / 1e9
+ax.errorbar(alma['lam'], alma_lim_3sig, yerr=alma_lim_3sig * 0.35, uplims=True,
+            fmt='none', color='#444444', elinewidth=1.1, capsize=3, zorder=6)
+ax.scatter(alma['lam'], alma_lim_3sig, marker='v', color='#444444', s=45, zorder=7,
+           label=r'ALMA B7 3$\sigma$ limit')
+ax.annotate(f"{alma['lam']:.0f} µm\n({alma_freq_GHz:.0f} GHz)", (alma['lam'], alma_lim_3sig),
+            textcoords="offset points", xytext=(0, -22), fontsize=7, ha='center', color='#444444')
 
 ax.set_xscale('log')
 ax.set_yscale('log')
 ax.set_xlabel('Wavelength (µm)')
 ax.set_ylabel('Flux density (Jy)')
-ax.set_title('DH Tau B SED: Ks-anchored atmosphere model + CRIRES+ data + blackbody excess')
-ax.set_xlim(0.9, 20)
-ax.set_ylim(3e-4, 2e-2)
-ax.legend(fontsize=7, loc='upper left')
+ax.set_xlim(0.9, 1200)
+ax.set_ylim(8e-5, 5e-3)
+ax.legend(fontsize=7, loc='upper right')
 ax.grid(alpha=0.2, which='both')
 
-fig.tight_layout()
+fig.suptitle('DH Tau B SED (preliminary fit)', y=0.995)
+
+fig.tight_layout(rect=[0, 0, 1, 0.97])
 fig.savefig(f'{PERM}/dh_tau_b_sed_anchored_crires.png', dpi=150)
 fig.savefig('/data2/peng/paper/aa/figures/fig_sed_anchored_crires_draft.png', dpi=150)
 print("\nSaved plot.")

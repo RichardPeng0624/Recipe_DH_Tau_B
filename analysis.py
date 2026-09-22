@@ -744,6 +744,7 @@ def plot_model_vs_data_scatter(
     data_dir: Path | str | None = None,
     method: str = 'downsampling',
     normalize: bool = True,
+    data_scatter: bool = True,
 ) -> float:
     """
     Variant of plot_binned_model_vs_data (2026-07-10, for analysis notebook 4):
@@ -753,8 +754,11 @@ def plot_model_vs_data_scatter(
     Differences from plot_binned_model_vs_data (everything else identical —
     same data loading, telluric overlay, per-order-detector normalisation,
     binning options):
-      - data drawn as scatter points with ±1σ error bars (no connecting line);
-        residual points carry the same error bars;
+      - data drawn as scatter points with ±1σ error bars by default
+        (data_scatter=True); set data_scatter=False to draw the data as a
+        connecting line instead (gap-broken like the model line, so it does
+        not draw straight across masked/clipped regions). Residual points
+        carry the same error bars;
       - win=0 (or 1) disables binning entirely: raw valid pixels are plotted;
       - normalize=False skips the per-order-detector median normalisation and
         plots data and model in their native (absolute) flux units, so the
@@ -911,13 +915,17 @@ def plot_model_vs_data_scatter(
             ax_top.errorbar(w_bin, f_n_vld, yerr=e_n_vld,
                             fmt='none', ecolor='gray', elinewidth=1,
                             capsize=1, alpha=0.45, label=lbl_err, zorder=2)
-            ax_top.scatter(w_bin, f_n_vld, s=20, color="steelblue", alpha=0.75,
-                           linewidths=1, label=lbl_data, zorder=3)
-            ax_top.plot(w_bin, f_n_vld, color="steelblue", lw=0.8, alpha=0.75, zorder=3)
+            if data_scatter:
+                ax_top.scatter(w_bin, f_n_vld, s=20, color="steelblue", alpha=0.75,
+                               linewidths=1, label=lbl_data, zorder=3)
+            else:
+                _w_dgap, _f_dgap = _insert_nan_at_gaps(w_bin, f_n_vld)
+                ax_top.plot(_w_dgap, _f_dgap, color="steelblue", lw=1.2, alpha=0.85,
+                            label=lbl_data, zorder=3)
             
             _w_gap, _m_gap = _insert_nan_at_gaps(w_bin, m_n_vld)
             ax_top.plot(_w_gap, _m_gap, color="tomato", lw=2.5, alpha=0.95,
-                        label=lbl_model, zorder=5)
+                        marker='.', markersize=5, label=lbl_model, zorder=5)
             ax_res.errorbar(w_bin, resid_vld, yerr=e_n_vld,
                             fmt='none', ecolor='gray', elinewidth=0.5,
                             capsize=0.5, alpha=0.4, zorder=2)
